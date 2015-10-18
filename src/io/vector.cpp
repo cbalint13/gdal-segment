@@ -121,7 +121,7 @@ void LabelContours( const cv::Mat klabels, std::vector< std::vector< LINE > >& l
 }
 
 
-void SavePolygons( const char *InFilename,
+void SavePolygons( const std::vector< std::string > InFilenames,
                    const char *OutFilename,
                    const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
@@ -159,7 +159,7 @@ void SavePolygons( const char *InFilename,
 
   // dataset
   GDALDataset* piDataset;
-  piDataset = (GDALDataset*) GDALOpen(InFilename, GA_ReadOnly);
+  piDataset = (GDALDataset*) GDALOpen(InFilenames[0].c_str(), GA_ReadOnly);
 
   // spatialref
   OGRSpatialReference oSRS;

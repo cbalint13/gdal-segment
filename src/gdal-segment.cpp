@@ -43,7 +43,7 @@ using namespace cv::ximgproc;
 int main(int argc, char ** argv)
 {
   const char *algo = "SLICO";
-  const char *InFilename = NULL;
+  vector< string > InFilenames;
   const char *OutFilename = NULL;
 
   // general defaults
@@ -95,19 +95,17 @@ int main(int argc, char ** argv)
         niter = atoi(argv[i+1]);
         i++; continue;
       }
+      if( EQUAL( argv[i],"-out" ) ) {
+        OutFilename = argv[i+1];
+        i++; continue;
+      }
       printf("Invalid %s option.\n\n", argv[i]);
       help = true;
     }
     else if( argv[i][0] != '-' )
     {
-      if( InFilename == NULL ) {
-        InFilename = argv[i];
-        continue;
-      }
-      if( OutFilename == NULL ) {
-        OutFilename = argv[i];
-        continue;
-      }
+      InFilenames.push_back( argv[i] );
+      continue;
     }
   }
 
@@ -118,7 +116,7 @@ int main(int argc, char ** argv)
     printf( "ERROR: Invalid algorithm: %s\n", algo);
     help = true;
   }
-  if (! InFilename ) {
+  if ( InFilenames.size() == 0 ) {
     printf( "ERROR: No input file specified.\n");
     help = true;
   }
@@ -128,7 +126,7 @@ int main(int argc, char ** argv)
   }
 
   if ( help ) {
-    printf( "\nUsage: gdal-segment [-help] src_raster dst_vector\n"
+    printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
             "    [-algo <SLICO (default), SLIC>] [-niter <1..500>] [-region <pixels>] [-ruler <1.00 ... 40.00>]\n\n"
             "Default niter: 10 iterations\n"
             "Default region: 10 pixels\n"
@@ -147,7 +145,7 @@ int main(int argc, char ** argv)
 
   startTime = cv::getTickCount();
   std::vector< cv::Mat > raster;
-  LoadRaster( InFilename, raster );
+  LoadRaster( InFilenames, raster );
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
@@ -182,10 +180,13 @@ int main(int argc, char ** argv)
   endTime = cv::getTickCount();
 
   // get smooth labels
-  printf( "           count: %i superpixels (grow in %.6f sec)\n",
+  printf( "           count: %i superpixels (grows in %.6f sec)\n",
           slic->getNumberOfSuperpixels(), ( endTime - startTime ) / frequency );
+  startTime = cv::getTickCount();
   slic->enforceLabelConnectivity();
-  printf( "           final: %i superpixels\n", slic->getNumberOfSuperpixels() );
+  endTime = cv::getTickCount();
+  printf( "           final: %i superpixels (merge in %.6f sec)\n",
+          slic->getNumberOfSuperpixels(), ( endTime - startTime ) / frequency );
 
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
@@ -240,7 +241,7 @@ int main(int argc, char ** argv)
   */
 
   startTime = cv::getTickCount();
-  SavePolygons( InFilename, OutFilename, klabels, raster,
+  SavePolygons( InFilenames, OutFilename, klabels, raster,
                 labelpixels, sumCH, avgCH, stdCH, linelists );
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );

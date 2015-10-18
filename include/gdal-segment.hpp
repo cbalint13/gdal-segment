@@ -31,7 +31,8 @@ typedef struct LINE {
 } LINE;
 
 // raster operation
-void LoadRaster( const char *InFilename, std::vector< cv::Mat >& raster );
+void LoadRaster( const std::vector< std::string > InFilenames,
+                 std::vector< cv::Mat >& raster );
 
 // raster statistics
 void ComputeStats( const cv::Mat klabels,
@@ -45,7 +46,7 @@ void ComputeStats( const cv::Mat klabels,
 void LabelContours( const cv::Mat klabels, std::vector< std::vector< LINE > >& linelists);
 
 // vactor dump
-void SavePolygons( const char *InFilename,
+void SavePolygons( const std::vector< std::string > InFilenames,
                    const char *OutFilename,
                    const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,

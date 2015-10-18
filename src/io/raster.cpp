@@ -31,208 +31,218 @@ using namespace cv;
 
 
 
-void LoadRaster( const char *InFilename, std::vector< cv::Mat >& raster )
+void LoadRaster( const std::vector< std::string > InFilenames,
+                 std::vector< cv::Mat >& raster )
 {
+  int rasters = 0;
+  int channel = 0;
 
-  GDALDataset* piDataset;
-
-  // open the dataset
-  piDataset = (GDALDataset*) GDALOpen(InFilename, GA_ReadOnly);
-
-  if( piDataset == NULL )
-  {
-    printf("\nERROR: Couldn't open dataset %s\n",InFilename);
-    exit( 1 );
-  }
-
-  if( piDataset->GetGCPCount() > 0 )
-  {
-    printf("\nERROR: Cannot handle raster with GCP points.\n");
-    exit( 1 );
-  }
-
-  // count raster bands
-  int nBands = piDataset->GetRasterCount();
-
-  printf ("\nLoad Raster file: %s\n", InFilename);
-  printf ("       image: [%i] bands\n", nBands);
-
-  int prev_rType = 0, prev_XSize = 0, prev_YSize = 0;
-
-  // gather all bands
-  for ( int iB = 0; iB < nBands; iB++ )
+  for ( size_t i = 0; i < InFilenames.size(); i++ )
   {
 
-    int iX, iY;
-    int iXBlock, iYBlock;
-    int nXBlockSize, nYBlockSize;
+    GDALDataset* piDataset;
 
-    cv::Mat Channel;
-    cv::Mat pabyData;
-    GDALDataType rType;
+    // open the dataset
+    piDataset = (GDALDataset*) GDALOpen(InFilenames[0].c_str(), GA_ReadOnly);
 
-    // get parameters from input dataset
-    const int nXSize = piDataset->GetRasterBand(iB+1)->GetXSize();
-    const int nYSize = piDataset->GetRasterBand(iB+1)->GetYSize();
-    piDataset->GetRasterBand(iB+1)->GetBlockSize( &nXBlockSize, &nYBlockSize );
-
-    rType = piDataset->GetRasterBand(iB+1)->GetRasterDataType();
-
-    int nXBlocks = (nXSize + nXBlockSize - 1) / nXBlockSize;
-    int nYBlocks = (nYSize + nYBlockSize - 1) / nYBlockSize;
-
-    std::string dType;
-
-    switch( rType )
+    if( piDataset == NULL )
     {
-      case GDT_Byte:
-        dType = "Byte";
-        Channel = cv::Mat( nYSize, nXSize, CV_8U);
-        pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_8U);
-        break;
-
-      case GDT_UInt16:
-        dType = "UInt16";
-        Channel = cv::Mat( nYSize, nXSize, CV_16U);
-        pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_16U);
-        break;
-
-      case GDT_Int16:
-        dType = "Int16";
-        Channel = cv::Mat( nYSize, nXSize, CV_16S);
-        pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_16S);
-        break;
-
-      case GDT_Int32:
-        dType = "Int32";
-        Channel = cv::Mat( nYSize, nXSize, CV_32S);
-        pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_32S);
-        break;
-
-      case GDT_Float32:
-        dType = "Float32";
-        Channel = cv::Mat( nYSize, nXSize, CV_32F);
-        pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_32F);
-        break;
-
-      case GDT_Float64:
-        dType = "Float64";
-        Channel = cv::Mat( nYSize, nXSize, CV_64F);
-        pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_64F);
-        break;
-
-      default:
-        printf ("\nERROR: Unsupported raster data type.\n");
-        exit ( 1 );
+      printf("\nERROR: Couldn't open dataset %s\n", InFilenames[0].c_str());
+      exit( 1 );
     }
 
-    // consistency
-    if ( iB+1 > 1 )
+    if( piDataset->GetGCPCount() > 0 )
     {
-      if ( ( prev_XSize != nXSize )
-         ||( prev_YSize != nYSize ) )
-      {
-        printf ("\nERROR: CH #%i has different size: (%iP x %iL) pixels.\n", iB+1, nXSize, nYSize);
-        exit ( 1 );
-      }
-      if ( prev_rType != rType )
-      {
-        printf ("\nERROR: CH #%i has different data type: [%s]\n", iB+1, dType.c_str());
-        exit ( 1 );
-      }
+      printf("\nERROR: Cannot handle raster with GCP points.\n");
+      exit( 1 );
     }
 
-    // store previous
-    prev_rType = rType;
-    prev_XSize = nXSize;
-    prev_YSize = nYSize;
+    rasters++;
+    printf ("\nLoad Raster #%i (#%lu): %s\n", rasters,
+              InFilenames.size(), InFilenames[0].c_str());
 
-    printf ("       CH: #%i [%s]\n", iB+1, dType.c_str());
-    printf ("           chann: (%i Pixels x %i Lines) pixels\n", nXSize, nYSize);
-    printf ("           tiles: (%i Columns x %i Rows) blocks\n", nXBlocks, nYBlocks);
-    printf ("           block: (%i Pixels x %i Lines) pixels / tile\n", nXBlockSize, nYBlockSize);
-    printf ("           ");
+    // count raster bands
+    int nBands = piDataset->GetRasterCount();
+    printf ("       image: [%i] bands\n", nBands);
 
-    for( iYBlock = 0; iYBlock < nYBlocks; iYBlock++ )
+    int prev_rType = 0, prev_XSize = 0, prev_YSize = 0;
+
+    // gather all bands
+    for ( int iB = 0; iB < nBands; iB++ )
     {
-        for( iXBlock = 0; iXBlock < nXBlocks; iXBlock++ )
+
+      int iX, iY;
+      int iXBlock, iYBlock;
+      int nXBlockSize, nYBlockSize;
+
+      cv::Mat Channel;
+      cv::Mat pabyData;
+      GDALDataType rType;
+
+      // get parameters from input dataset
+      const int nXSize = piDataset->GetRasterBand(iB+1)->GetXSize();
+      const int nYSize = piDataset->GetRasterBand(iB+1)->GetYSize();
+      piDataset->GetRasterBand(iB+1)->GetBlockSize( &nXBlockSize, &nYBlockSize );
+
+      rType = piDataset->GetRasterBand(iB+1)->GetRasterDataType();
+
+      int nXBlocks = (nXSize + nXBlockSize - 1) / nXBlockSize;
+      int nYBlocks = (nYSize + nYBlockSize - 1) / nYBlockSize;
+
+      std::string dType;
+
+      switch( rType )
+      {
+        case GDT_Byte:
+          dType = "Byte";
+          Channel = cv::Mat( nYSize, nXSize, CV_8U);
+          pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_8U);
+          break;
+
+        case GDT_UInt16:
+          dType = "UInt16";
+          Channel = cv::Mat( nYSize, nXSize, CV_16U);
+          pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_16U);
+          break;
+
+        case GDT_Int16:
+          dType = "Int16";
+          Channel = cv::Mat( nYSize, nXSize, CV_16S);
+          pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_16S);
+          break;
+
+        case GDT_Int32:
+          dType = "Int32";
+          Channel = cv::Mat( nYSize, nXSize, CV_32S);
+          pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_32S);
+          break;
+
+        case GDT_Float32:
+          dType = "Float32";
+          Channel = cv::Mat( nYSize, nXSize, CV_32F);
+          pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_32F);
+          break;
+
+        case GDT_Float64:
+          dType = "Float64";
+          Channel = cv::Mat( nYSize, nXSize, CV_64F);
+          pabyData = cv::Mat( nYBlockSize, nXBlockSize, CV_64F);
+          break;
+
+        default:
+          printf ("\nERROR: Unsupported raster data type.\n");
+          exit ( 1 );
+      }
+
+      // consistency
+      if ( iB+1 > 1 )
+      {
+        if ( ( prev_XSize != nXSize )
+           ||( prev_YSize != nYSize ) )
         {
-             int nXValid, nYValid;
-
-             // compute the portion of the block that is valid
-             // for partial edge blocks.
-             if( (iXBlock+1) * nXBlockSize > nXSize )
-               nXValid = nXSize - iXBlock * nXBlockSize;
-             else
-               nXValid = nXBlockSize;
-
-             if( (iYBlock+1) * nYBlockSize > nYSize )
-               nYValid = nYSize - iYBlock * nYBlockSize;
-             else
-               nYValid = nYBlockSize;
-
-             piDataset->GetRasterBand(iB+1)->ReadBlock( iXBlock, iYBlock, pabyData.data );
-
-             // cache some computations
-             const int iXAllBlocks = iXBlock * nXBlockSize;
-             const int iYAllBlocks = iYBlock * nYBlockSize;
-
-             for (iY = 0; iY < nYValid; iY++)
-             {
-                  // cache some computations
-                  const int iYOffset = iY * nXBlockSize;
-                  const int iYShifts = iY + iYAllBlocks;
-
-                  for (iX = 0; iX < nXValid; iX++)
-                  {
-                       switch( rType )
-                       {
-                         case GDT_Byte:
-                           Channel.at<uchar>( iYShifts, iX + iXAllBlocks )
-                                     = pabyData.at<uchar>( iYOffset + iX );
-                           break;
-
-                         case GDT_UInt16:
-                           Channel.at<ushort>( iYShifts, iX + iXAllBlocks )
-                                     = pabyData.at<ushort>( iYOffset + iX );
-                           break;
-
-                         case GDT_Int16:
-                           Channel.at<short>( iYShifts, iX + iXAllBlocks )
-                                     = pabyData.at<short>( iYOffset + iX );
-                           break;
-
-                         case GDT_Int32:
-                           Channel.at<int>( iYShifts, iX + iXAllBlocks )
-                                     = pabyData.at<int>( iYOffset + iX );
-                           break;
-
-                         case GDT_Float32:
-                           Channel.at<float>( iYShifts, iX + iXAllBlocks )
-                                     = pabyData.at<float>( iYOffset + iX );
-                           break;
-
-                         case GDT_Float64:
-                           Channel.at<double>( iYShifts, iX + iXAllBlocks )
-                                     = pabyData.at<double>( iYOffset + iX );
-                           break;
-
-                         default:
-                           printf ("\nERROR: Unsupported raster data type.\n");
-                           exit ( 1 );
-                       }
-                  }
-             }
+          printf ("\nERROR: CH #%i has different size: (%iP x %iL) pixels.\n", iB+1, nXSize, nYSize);
+          exit ( 1 );
         }
-        GDALTermProgress( (float)((iYBlock+1) / (float)nYBlocks), NULL, NULL);
-    }
-    pabyData.empty();
-    raster.push_back(Channel);
-    GDALTermProgress( 1.0f, NULL, NULL );
-  }
-  GDALTermProgress( 1.0f, NULL, NULL );
+        if ( prev_rType != rType )
+        {
+          printf ("\nERROR: CH #%i has different data type: [%s]\n", iB+1, dType.c_str());
+          exit ( 1 );
+        }
+      }
 
-  GDALClose( (GDALDatasetH) piDataset );
+      // store previous
+      prev_rType = rType;
+      prev_XSize = nXSize;
+      prev_YSize = nYSize;
+
+      channel++;
+
+      printf ("  CH: #%03i chann: (#%i Band : [%s])\n", channel, iB+1, dType.c_str());
+      printf ("           areas: (%i Pixels x %i Lines) pixels\n", nXSize, nYSize);
+      printf ("           tiles: (%i Columns x %i Rows) blocks\n", nXBlocks, nYBlocks);
+      printf ("           block: (%i Pixels x %i Lines) pixels / tile\n", nXBlockSize, nYBlockSize);
+      printf ("           ");
+
+      for( iYBlock = 0; iYBlock < nYBlocks; iYBlock++ )
+      {
+          for( iXBlock = 0; iXBlock < nXBlocks; iXBlock++ )
+          {
+               int nXValid, nYValid;
+
+               // compute the portion of the block that is valid
+               // for partial edge blocks.
+               if( (iXBlock+1) * nXBlockSize > nXSize )
+                 nXValid = nXSize - iXBlock * nXBlockSize;
+               else
+                 nXValid = nXBlockSize;
+
+               if( (iYBlock+1) * nYBlockSize > nYSize )
+                 nYValid = nYSize - iYBlock * nYBlockSize;
+               else
+                 nYValid = nYBlockSize;
+
+               piDataset->GetRasterBand(iB+1)->ReadBlock( iXBlock, iYBlock, pabyData.data );
+
+               // cache some computations
+               const int iXAllBlocks = iXBlock * nXBlockSize;
+               const int iYAllBlocks = iYBlock * nYBlockSize;
+
+               for (iY = 0; iY < nYValid; iY++)
+               {
+                    // cache some computations
+                    const int iYOffset = iY * nXBlockSize;
+                    const int iYShifts = iY + iYAllBlocks;
+
+                    for (iX = 0; iX < nXValid; iX++)
+                    {
+                         switch( rType )
+                         {
+                           case GDT_Byte:
+                             Channel.at<uchar>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<uchar>( iYOffset + iX );
+                             break;
+
+                           case GDT_UInt16:
+                             Channel.at<ushort>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<ushort>( iYOffset + iX );
+                             break;
+
+                           case GDT_Int16:
+                             Channel.at<short>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<short>( iYOffset + iX );
+                             break;
+
+                           case GDT_Int32:
+                             Channel.at<int>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<int>( iYOffset + iX );
+                             break;
+
+                           case GDT_Float32:
+                             Channel.at<float>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<float>( iYOffset + iX );
+                             break;
+
+                           case GDT_Float64:
+                             Channel.at<double>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<double>( iYOffset + iX );
+                             break;
+
+                           default:
+                             printf ("\nERROR: Unsupported raster data type.\n");
+                             exit ( 1 );
+                         }
+                    }
+               }
+          }
+          GDALTermProgress( (float)((iYBlock+1) / (float)nYBlocks), NULL, NULL);
+      }
+      pabyData.empty();
+      raster.push_back(Channel);
+      GDALTermProgress( 1.0f, NULL, NULL );
+    }
+    GDALTermProgress( 1.0f, NULL, NULL );
+    GDALClose( (GDALDatasetH) piDataset );
+  }
 }
 
 void ComputeStats( const cv::Mat klabels,
