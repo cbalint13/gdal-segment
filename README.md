@@ -1,21 +1,19 @@
 # gdal-segment
 
- * **GDAL Segment** implementes various segmentation algorithm over raster images. It can
-be used to segment aerial, sattelite imagery of various formats supported by GDAL and
-various layouts like multispectral. It uses OpenCV for it's core algorithms.
+ * **GDAL Segment** implements various segmentation algorithm over raster images. It can
+be used to segment large aerial, sattelite imagery of various formats supported by GDAL and
+various layouts like multispectral or hyperspectral. It uses OpenCV for it's core algorithms.
 
-----
-Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
-    [-algo <SLICO (default), SLIC>] [-niter <1..500>] [-region <pixels>] [-ruler <1.00 ... 40.00>]
+```
+    Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
+           -algo <SLICO (default), SLIC>] [-niter <1..500>] [-region <pixels>] [-ruler <1.00 ... 40.00>]
 
 Default niter: 10 iterations
 Default region: 10 pixels
 Default ruler: 10.00
-
-----
+```
 
 **Related citations:**
-
 
  * [1] "SLIC Superpixels Compared to State-of-the-art Superpixel Methods"
  Radhakrishna Achanta, Appu Shaji, Kevin Smith, Aurelien Lucchi, Pascal Fua,
