@@ -6,7 +6,8 @@ various layouts like multispectral or hyperspectral. It uses OpenCV for it's cor
 
 ```
     Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
-           -algo <SLICO (default), SLIC>] [-niter <1..500>] [-region <pixels>] [-ruler <1.00 ... 40.00>]
+           -algo <SLICO (default), SLIC>] [-niter <1..500>]
+           [-region <pixels>] [-ruler <1.00 ... 40.00>]
 
 Default niter: 10 iterations
 Default region: 10 pixels
