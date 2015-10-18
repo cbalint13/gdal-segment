@@ -13,6 +13,17 @@
  *
  */
 
+/*
+ "SLIC Superpixels Compared to State-of-the-art Superpixel Methods"
+ Radhakrishna Achanta, Appu Shaji, Kevin Smith, Aurelien Lucchi, Pascal Fua,
+ and Sabine Susstrunk, IEEE TPAMI, Volume 34, Issue 11, Pages 2274-2282,
+ November 2012.
+
+ "SLIC Superpixels" Radhakrishna Achanta, Appu Shaji, Kevin Smith,
+ Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
+ Report no. 149300, June 2010.
+ */
+
 /* slic-segment.cpp */
 /* SLIC superpixels segment */
 
@@ -66,6 +77,7 @@ int main(int argc, char ** argv)
 
   // default help
   bool help = false;
+  bool askhelp = false;
 
   /*
    * load arguments
@@ -76,7 +88,7 @@ int main(int argc, char ** argv)
     if( argv[i][0] == '-' )
     {
       if( EQUAL( argv[i],"-help" ) ) {
-        help = true;
+        askhelp = true;
         i++; break;
       }
       if( EQUAL( argv[i],"-algo" ) ) {
@@ -109,23 +121,24 @@ int main(int argc, char ** argv)
     }
   }
 
-  printf( "\n" );
+  if ( !askhelp )
+  {
+    // check parameters
+    if ((! EQUAL( algo, "SLICO")) && ( ! EQUAL( algo, "SLIC"))) {
+      printf( "\nERROR: Invalid algorithm: %s\n", algo);
+      help = true;
+    }
+    if ( InFilenames.size() == 0 ) {
+      printf( "\nERROR: No input file specified.\n");
+      help = true;
+    }
+    if (! OutFilename ) {
+      printf( "\nERROR: No output file specified.\n");
+      help = true;
+    }
+  }
 
-  // check parameters
-  if ((! EQUAL( algo, "SLICO")) && ( ! EQUAL( algo, "SLIC"))) {
-    printf( "ERROR: Invalid algorithm: %s\n", algo);
-    help = true;
-  }
-  if ( InFilenames.size() == 0 ) {
-    printf( "ERROR: No input file specified.\n");
-    help = true;
-  }
-  if (! OutFilename ) {
-    printf( "ERROR: No output file specified.\n");
-    help = true;
-  }
-
-  if ( help ) {
+  if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
             "    [-algo <SLICO (default), SLIC>] [-niter <1..500>] [-region <pixels>] [-ruler <1.00 ... 40.00>]\n\n"
             "Default niter: 10 iterations\n"
@@ -156,15 +169,15 @@ int main(int argc, char ** argv)
   printf( "Init Superpixels\n");
   Ptr<SuperpixelSLIC> slic;
   startTime = cv::getTickCount();
-//  if( EQUAL( algo, "SLIC" ) )
-//    slic = createSuperpixelSLIC( raster, SLIC, regionsize, regularizer );
-//  else if( EQUAL( algo, "SLICO" ) )
+  if( EQUAL( algo, "SLIC" ) )
+    slic = createSuperpixelSLIC( raster, SLIC, regionsize, regularizer );
+  else if( EQUAL( algo, "SLICO" ) )
     slic = createSuperpixelSLIC( raster, SLICO, regionsize, regularizer );
-//  else
-//  {
-//    printf( "ERROR: No such algorithm: [%s].\n", algo );
-//    exit( 1 );
-//  }
+  else
+  {
+    printf( "\nERROR: No such algorithm: [%s].\n", algo );
+    exit( 1 );
+  }
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
@@ -172,7 +185,7 @@ int main(int argc, char ** argv)
   printf( "           inits: %i superpixels\n", slic->getNumberOfSuperpixels() );
 
   /*
-   * start iterate segments
+   * start compute segments
    */
 
   startTime = cv::getTickCount();
