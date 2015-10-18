@@ -141,7 +141,7 @@ void SavePolygons( const char *InFilename,
   liDriver = GetGDALDriverManager()->GetDriverByName(pszDriverName );
   if( liDriver == NULL )
   {
-      printf( "\n\nERROR: %s driver not available.\n", pszDriverName );
+      printf( "\nERROR: %s driver not available.\n", pszDriverName );
       exit( 1 );
   }
 
@@ -153,7 +153,7 @@ void SavePolygons( const char *InFilename,
 
   if( liDS == NULL )
   {
-      printf( "\n\nERROR: Creation of output file failed.\n" );
+      printf( "\nERROR: Creation of output file failed.\n" );
       exit( 1 );
   }
 
@@ -169,7 +169,7 @@ void SavePolygons( const char *InFilename,
   liLayer = liDS->CreateLayer( "segments", &oSRS, wkbPolygon, NULL );
   if( liLayer == NULL )
   {
-      printf( "\n\nERROR: Layer creation failed.\n" );
+      printf( "\nERROR: Layer creation failed.\n" );
       exit( 1 );
   }
   // spatial transform
@@ -323,7 +323,7 @@ void SavePolygons( const char *InFilename,
 
       if( liLayer->CreateFeature( liFeature ) != OGRERR_NONE )
       {
-         printf( "\n\nERROR: Failed to create feature in shapefile.\n" );
+         printf( "\nERROR: Failed to create feature in shapefile.\n" );
          exit( 1 );
       }
       OGRFeature::DestroyFeature( liFeature );

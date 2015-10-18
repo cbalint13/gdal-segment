@@ -39,10 +39,16 @@ void LoadRaster( const char *InFilename, std::vector< cv::Mat >& raster )
   // open the dataset
   piDataset = (GDALDataset*) GDALOpen(InFilename, GA_ReadOnly);
 
-  if(piDataset == NULL)
+  if( piDataset == NULL )
   {
-    printf("Couldn't open dataset %s\n",InFilename);
-    exit(-1);
+    printf("\nERROR: Couldn't open dataset %s\n",InFilename);
+    exit( 1 );
+  }
+
+  if( piDataset->GetGCPCount() > 0 )
+  {
+    printf("\nERROR: Cannot handle raster with GCP points.\n");
+    exit( 1 );
   }
 
   // count raster bands
@@ -116,7 +122,7 @@ void LoadRaster( const char *InFilename, std::vector< cv::Mat >& raster )
         break;
 
       default:
-        printf ("ERROR: Unsupported raster data type.\n");
+        printf ("\nERROR: Unsupported raster data type.\n");
         exit ( 1 );
     }
 
@@ -126,12 +132,12 @@ void LoadRaster( const char *InFilename, std::vector< cv::Mat >& raster )
       if ( ( prev_XSize != nXSize )
          ||( prev_YSize != nYSize ) )
       {
-        printf ("ERROR: CH #%i has different size: (%iP x %iL) pixels.\n", iB+1, nXSize, nYSize);
+        printf ("\nERROR: CH #%i has different size: (%iP x %iL) pixels.\n", iB+1, nXSize, nYSize);
         exit ( 1 );
       }
       if ( prev_rType != rType )
       {
-        printf ("ERROR: CH #%i has different data type: [%s]\n", iB+1, dType.c_str());
+        printf ("\nERROR: CH #%i has different data type: [%s]\n", iB+1, dType.c_str());
         exit ( 1 );
       }
     }
@@ -212,7 +218,7 @@ void LoadRaster( const char *InFilename, std::vector< cv::Mat >& raster )
                            break;
 
                          default:
-                           printf ("ERROR: Unsupported raster data type.\n");
+                           printf ("\nERROR: Unsupported raster data type.\n");
                            exit ( 1 );
                        }
                   }
@@ -280,7 +286,7 @@ void ComputeStats( const cv::Mat klabels,
                 sumCH[b][k] += (double) raster[b].at<double>(i);
                 break;
               default:
-                CV_Error( Error::StsInternal, "Invalid raster depth" );
+                CV_Error( Error::StsInternal, "\nERROR: Invalid raster depth" );
                 break;
             }
           }
@@ -346,7 +352,7 @@ void ComputeStats( const cv::Mat klabels,
                              - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
                 break;
               default:
-                CV_Error( Error::StsInternal, "Invalid raster depth" );
+                CV_Error( Error::StsInternal, "\nERROR: Invalid raster depth" );
                 break;
             }
           }
