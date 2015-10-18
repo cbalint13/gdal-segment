@@ -149,8 +149,8 @@ int main(int argc, char ** argv)
     exit( 1 );
   }
 
-  printf( "Segment raster using: %s\n", algo );
-  printf( "Segmenting parameter: ruler=%.02f region=%i niter=%i\n", regularizer, regionsize, niter );
+  printf( "Segments raster using: %s\n", algo );
+  printf( "Process use parameter: ruler=%.02f region=%i niter=%i\n", regularizer, regionsize, niter );
 
   /*
    * load raster image
