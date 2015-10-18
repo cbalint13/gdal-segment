@@ -2,7 +2,7 @@
 
  * **GDAL Segment** implementes various segmentation algorithm over raster images. It can
 be used to segment aerial, sattelite imagery of various formats supported by GDAL and
-various layouts like multispectral.
+various layouts like multispectral. It uses OpenCV for it's core algorithms.
 
 ----
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
