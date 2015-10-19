@@ -65,6 +65,10 @@ IF(OpenCV_FOUND)
   IF(VersionIncompatible)
     MESSAGE(FATAL_ERROR "OpenCV minimum 3.0.0 required.")
   ENDIF()
+  FIND_FILE(OPENCV_HAS_SLIC slic.hpp HINTS ${OpenCV_INCLUDE_DIRS}/opencv2/ximgproc/)
+  IF(NOT OPENCV_HAS_SLIC)
+    MESSAGE(FATAL_ERROR "OpenCV has no SLIC superpixel support. Too old ?")
+  ENDIF()
 ENDIF()
 
 #####
@@ -73,6 +77,34 @@ FIND_PACKAGE(GDAL COMPONENTS REQUIRED)
 IF(GDAL_FOUND)
   INCLUDE_DIRECTORIES(${GDAL_INCLUDE_DIRS})
   MESSAGE(STATUS "GDAL found.")
+  # Extract GDAL version from gdal_version.h
+  SET(GDAL_VERSION_FILE ${GDAL_INCLUDE_DIRS}/gdal_version.h)
+  IF (NOT EXISTS ${GDAL_VERSION_FILE})
+      GDAL_REPORT_NOT_FOUND(
+          "Could not find file: ${GDAL_VERSION_FILE} "
+          "containing version information in GDAL install located at: "
+          "${GDAL_INCLUDE_DIRS}.")
+  ELSE (NOT EXISTS ${GDAL_VERSION_FILE})
+    FILE(READ ${GDAL_VERSION_FILE} GDAL_VERSION_FILE_CONTENTS)
+        STRING(REGEX MATCH "define GDAL_VERSION_MAJOR +[0-9]"
+          GDAL_VERSION_MAJOR "${GDAL_VERSION_FILE_CONTENTS}")
+        STRING(REGEX REPLACE "define GDAL_VERSION_MAJOR +([0-9]+)" "\\1"
+          GDAL_VERSION_MAJOR "${GDAL_VERSION_MAJOR}")
+        STRING(REGEX MATCH "define GDAL_VERSION_MINOR +[0-9]"
+          GDAL_VERSION_MINOR "${GDAL_VERSION_FILE_CONTENTS}")
+        STRING(REGEX REPLACE "define GDAL_VERSION_MINOR +([0-9]+)" "\\1"
+          GDAL_VERSION_MINOR "${GDAL_VERSION_MINOR}")
+        STRING(REGEX MATCH "define GDAL_VERSION_REV +[0-9]"
+          GDAL_VERSION_REV "${GDAL_VERSION_FILE_CONTENTS}")
+        STRING(REGEX REPLACE "define GDAL_VERSION_REV +([0-9]+)" "\\1"
+          GDAL_VERSION_REV "${GDAL_VERSION_REV}")
+        SET(GDAL_VERSION "${GDAL_VERSION_MAJOR}.${GDAL_VERSION_MINOR}.${GDAL_VERSION_REV}")
+  ENDIF(NOT EXISTS ${GDAL_VERSION_FILE})
+  MESSAGE(STATUS "GDAL version: ${GDAL_VERSION}")
+  STRING(COMPARE LESS "${GDAL_VERSION}" 2.0 VersionIncompatible)
+  IF(VersionIncompatible)
+    MESSAGE(FATAL_ERROR "GDAL minimum 2.0 required.")
+  ENDIF()
 ENDIF()
 
 # local directory
