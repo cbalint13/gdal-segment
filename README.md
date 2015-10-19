@@ -7,9 +7,9 @@ and uses GDAL as I/O. Implementation here follows several multithread and memory
 thus very large scenes are supported well.
 
 ```
-    Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
-           -algo <SLICO (default), SLIC>] [-niter <1..500>]
-           [-region <pixels>] [-ruler <1.00 ... 40.00>]
+Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
+                    -algo <SLICO (default), SLIC>] [-niter <1..500>]
+                    [-region <pixels>] [-ruler <1.00 ... 40.00>]
 
 Default niter: 10 iterations
 Default region: 10 pixels
