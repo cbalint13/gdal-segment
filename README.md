@@ -1,8 +1,10 @@
 # gdal-segment
 
- * **GDAL Segment** implements various segmentation algorithm over raster images. It can
+ * **GDAL Segment** implements various segmentation algorithms over raster images. It can
 be used to segment large aerial, sattelite imagery of various formats supported by GDAL and
-various layouts like multispectral or hyperspectral. It uses OpenCV for it's core algorithms.
+various layouts like multispectral or hyperspectral. It uses OpenCV for it's core algorithms,
+and uses GDAL as I/O. Implementation here follows several multithread and memory optimizatons,
+thus very large scenes are supported well.
 
 ```
     Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
@@ -13,6 +15,8 @@ Default niter: 10 iterations
 Default region: 10 pixels
 Default ruler: 10.00
 ```
+
+ * Please follow INSTALL.md for detailed requirements and install steps.
 
 **Related citations:**
 
