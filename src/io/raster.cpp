@@ -37,6 +37,9 @@ void LoadRaster( const std::vector< std::string > InFilenames,
   int rasters = 0;
   int channel = 0;
 
+  std::string prev_dType = "";
+  int prev_XSize = 0, prev_YSize = 0;
+
   for ( size_t i = 0; i < InFilenames.size(); i++ )
   {
 
@@ -63,9 +66,8 @@ void LoadRaster( const std::vector< std::string > InFilenames,
 
     // count raster bands
     int nBands = piDataset->GetRasterCount();
-    printf ("       image: [%i] bands\n", nBands);
+    printf ("  Scene have [%i] bands\n", nBands);
 
-    int prev_rType = 0, prev_XSize = 0, prev_YSize = 0;
 
     // gather all bands
     for ( int iB = 0; iB < nBands; iB++ )
@@ -134,30 +136,32 @@ void LoadRaster( const std::vector< std::string > InFilenames,
           exit ( 1 );
       }
 
+      channel++;
+
       // consistency
-      if ( iB+1 > 1 )
+      if ( channel > 1 )
       {
         if ( ( prev_XSize != nXSize )
            ||( prev_YSize != nYSize ) )
         {
-          printf ("\nERROR: CH #%i has different size: (%iP x %iL) pixels.\n", iB+1, nXSize, nYSize);
+          printf ("\nERROR: CH #%i has different size: (%iP x %iL) than previous (%iP x %iL).\n",
+                  channel, nXSize, nYSize, prev_XSize, prev_YSize);
           exit ( 1 );
         }
-        if ( prev_rType != rType )
+        if ( prev_dType != dType )
         {
-          printf ("\nERROR: CH #%i has different data type: [%s]\n", iB+1, dType.c_str());
+          printf ("\nERROR: CH #%i has different data type [%s] then previous [%s]\n",
+                 channel, dType.c_str(), prev_dType.c_str());
           exit ( 1 );
         }
       }
 
       // store previous
-      prev_rType = rType;
+      prev_dType = dType;
       prev_XSize = nXSize;
       prev_YSize = nYSize;
 
-      channel++;
-
-      printf ("  CH: #%03i chann: (#%i Band : [%s])\n", channel, iB+1, dType.c_str());
+      printf ("  CH: #%03i chann: (#%i Band | [%s])\n", channel, iB+1, dType.c_str());
       printf ("           areas: (%i Pixels x %i Lines) pixels\n", nXSize, nYSize);
       printf ("           tiles: (%i Columns x %i Rows) blocks\n", nXBlocks, nYBlocks);
       printf ("           block: (%i Pixels x %i Lines) pixels / tile\n", nXBlockSize, nYBlockSize);
