@@ -43,11 +43,11 @@ void LoadRaster( const std::vector< std::string > InFilenames,
     GDALDataset* piDataset;
 
     // open the dataset
-    piDataset = (GDALDataset*) GDALOpen(InFilenames[0].c_str(), GA_ReadOnly);
+    piDataset = (GDALDataset*) GDALOpen(InFilenames[i].c_str(), GA_ReadOnly);
 
     if( piDataset == NULL )
     {
-      printf("\nERROR: Couldn't open dataset %s\n", InFilenames[0].c_str());
+      printf("\nERROR: Couldn't open dataset %s\n", InFilenames[i].c_str());
       exit( 1 );
     }
 
@@ -59,7 +59,7 @@ void LoadRaster( const std::vector< std::string > InFilenames,
 
     rasters++;
     printf ("\nLoad Raster #%i (#%lu): %s\n", rasters,
-              InFilenames.size(), InFilenames[0].c_str());
+              InFilenames.size(), InFilenames[i].c_str());
 
     // count raster bands
     int nBands = piDataset->GetRasterCount();
