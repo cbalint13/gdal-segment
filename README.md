@@ -1,5 +1,7 @@
 # gdal-segment
 
+![Logo](https://github.com/cbalint13/samples/raw/master/samples/logo/small_logo.png)
+
  * **GDAL Segment** implements various segmentation algorithms over raster images. It can
 be used to segment large aerial, sattelite imagery of various formats supported by GDAL and
 various layouts like multispectral or hyperspectral. It uses OpenCV for it's core algorithms,
