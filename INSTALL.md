@@ -13,7 +13,7 @@
   [4] https://github.com/Itseez/opencv_contrib/pull/261
 ```
 
-(1) Prepareings:
+(1) Prepareing:
 
   * In order to have OpenCV (trunk) make sure distro has no *opencv* preinstalled !
 ```
