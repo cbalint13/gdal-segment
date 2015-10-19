@@ -3,10 +3,10 @@
 ![Logo](https://github.com/cbalint13/gdal-segment/blob/master/samples/logo/small_logo.png)
 
  * **GDAL Segment** implements various segmentation algorithms over raster images. It can
-be used to segment large aerial, sattelite imagery of various formats supported by GDAL and
+be used to segment large aerial, satellite imagery of various formats supported by GDAL and
 various layouts like multispectral or hyperspectral. It uses OpenCV for it's core algorithms,
-and uses GDAL as I/O. Implementation here follows several multithread and memory optimizatons,
-thus very large scenes are supported well.
+and GDAL for undelying I/O. Implementation here follows several multithread and memory
+friendly optimizations, thus very large scenes are supported well.
 
 ```
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
