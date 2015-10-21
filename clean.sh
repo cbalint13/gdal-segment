@@ -2,7 +2,7 @@
 
 rm -rf bin/*
 
-rm -rf sample/output.???
+rm -rf samples/output*.???
 
 find . -name cmake_install.cmake -exec rm -rf {} \;
 find . -name CMakeCache.txt -exec rm -rf {} \;

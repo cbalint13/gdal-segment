@@ -8,10 +8,14 @@ various layouts like multispectral or hyperspectral. It uses OpenCV for it's cor
 and GDAL for undelying I/O. Implementation here follows several multithread and memory
 friendly optimizations, thus very large scenes are supported well.
 
+ * At this moment it implements SLIC [1][2] (with SLICO) and SEEDS [3].
+
+ * Copyright: 2013,2015 Balint Cristian <cristian dot balint at gmail dot com>
+
 ```
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
-                    -algo <SLICO (default), SLIC>] [-niter <1..500>]
-                    [-region <pixels>] [-ruler <1.00 ... 40.00>]
+    [-b R B (N-th band from raster R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]
+    [-niter <1..500>] [-region <pixels>]
 
 Default niter: 10 iterations
 Default region: 10 pixels
@@ -30,3 +34,7 @@ Default ruler: 10.00
  * [2] "SLIC Superpixels" Radhakrishna Achanta, Appu Shaji, Kevin Smith,
  Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
  Report no. 149300, June 2010.
+
+ * [3] "SEEDS: Superpixels Extracted via Energy-Driven Sampling",
+ Van den Bergh M., Boix X., Roig G., de Capitani B. and Van Gool L.,
+ In European Conference on Computer Vision (Vol. 7, pp. 13-26)., 2012

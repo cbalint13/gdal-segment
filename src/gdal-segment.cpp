@@ -22,6 +22,11 @@
  "SLIC Superpixels" Radhakrishna Achanta, Appu Shaji, Kevin Smith,
  Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
  Report no. 149300, June 2010.
+
+ "SEEDS: Superpixels Extracted via Energy-Driven Sampling",
+ Van den Bergh M., Boix X., Roig G., de Capitani B. and Van Gool L.,
+ In European Conference on Computer Vision (Vol. 7, pp. 13-26)., 2012
+
  */
 
 /* slic-segment.cpp */
@@ -99,10 +104,6 @@ int main(int argc, char ** argv)
         regionsize = atoi(argv[i+1]);
         i++; continue;
       }
-      if( EQUAL( argv[i],"-ruler" ) ) {
-        regularizer = atof(argv[i+1]);
-        i++; continue;
-      }
       if( EQUAL( argv[i],"-niter" ) ) {
         niter = atoi(argv[i+1]);
         i++; continue;
@@ -124,15 +125,20 @@ int main(int argc, char ** argv)
   if ( !askhelp )
   {
     // check parameters
-    if ((! EQUAL( algo, "SLICO")) && ( ! EQUAL( algo, "SLIC"))) {
+    if ((! EQUAL( algo, "SLICO"))
+    &&  (! EQUAL( algo, "SLIC"))
+    &&  (! EQUAL( algo, "SEEDS")))
+    {
       printf( "\nERROR: Invalid algorithm: %s\n", algo);
       help = true;
     }
-    if ( InFilenames.size() == 0 ) {
+    if ( InFilenames.size() == 0 )
+    {
       printf( "\nERROR: No input file specified.\n");
       help = true;
     }
-    if (! OutFilename ) {
+    if (! OutFilename )
+    {
       printf( "\nERROR: No output file specified.\n");
       help = true;
     }
@@ -140,11 +146,10 @@ int main(int argc, char ** argv)
 
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
-            "    [-b R B (N-th band from raster R-th raster)] [-algo <SLICO (default), SLIC>]\n"
-            "    [-niter <1..500>] [-region <pixels>] [-ruler <1.00 ... 40.00>]\n\n"
+            "    [-b R B (N-th band from raster R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]\n"
+            "    [-niter <1..500>] [-region <pixels>]\n\n"
             "Default niter: 10 iterations\n"
-            "Default region: 10 pixels\n"
-            "Default ruler: 10.00\n\n");
+            "Default region: 10 pixels\n\n" );
 
     GDALDestroyDriverManager();
     exit( 1 );
@@ -169,11 +174,18 @@ int main(int argc, char ** argv)
 
   printf( "Init Superpixels\n");
   Ptr<SuperpixelSLIC> slic;
+  Ptr<SuperpixelSEEDS> seed;
   startTime = cv::getTickCount();
   if( EQUAL( algo, "SLIC" ) )
     slic = createSuperpixelSLIC( raster, SLIC, regionsize, regularizer );
   else if( EQUAL( algo, "SLICO" ) )
     slic = createSuperpixelSLIC( raster, SLICO, regionsize, regularizer );
+  else if( EQUAL( algo, "SEEDS" ) )
+  {
+    int clusters = int(((float)raster[0].cols / (float)regionsize)
+                     * ((float)raster[0].rows / (float)regionsize));
+    seed = createSuperpixelSEEDS( raster[0].cols, raster[0].rows, raster.size(), clusters, 1, 2, 5, true);
+  }
   else
   {
     printf( "\nERROR: No such algorithm: [%s].\n", algo );
@@ -182,39 +194,67 @@ int main(int argc, char ** argv)
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
+  size_t m_labels = 0;
+  if( ! EQUAL( algo, "SEEDS" ) )
+    m_labels = slic->getNumberOfSuperpixels();
+  else
+    m_labels = seed->getNumberOfSuperpixels();
+
   printf( "Grow Superpixels: #%i iterations\n", niter );
-  printf( "           inits: %i superpixels\n", slic->getNumberOfSuperpixels() );
+  printf( "           inits: %lu superpixels\n", m_labels );
 
   /*
    * start compute segments
    */
 
   startTime = cv::getTickCount();
-  slic->iterate( niter );
+  if( ! EQUAL( algo, "SEEDS" ) )
+    slic->iterate( niter );
+  else
+  {
+    cv::Mat whole;
+    cv::merge(raster,whole);
+    seed->iterate( whole, niter );
+  }
   endTime = cv::getTickCount();
+
+
+  if( ! EQUAL( algo, "SEEDS" ) )
+    m_labels = slic->getNumberOfSuperpixels();
+  else
+    m_labels = seed->getNumberOfSuperpixels();
 
   // get smooth labels
-  printf( "           count: %i superpixels (grows in %.6f sec)\n",
-          slic->getNumberOfSuperpixels(), ( endTime - startTime ) / frequency );
-  startTime = cv::getTickCount();
-  slic->enforceLabelConnectivity();
-  endTime = cv::getTickCount();
-  printf( "           final: %i superpixels (merge in %.6f sec)\n",
-          slic->getNumberOfSuperpixels(), ( endTime - startTime ) / frequency );
-
+  printf( "           count: %lu superpixels (grows in %.6f sec)\n",
+          m_labels, ( endTime - startTime ) / frequency );
+  if( ! EQUAL( algo, "SEEDS" ) )
+  {
+    startTime = cv::getTickCount();
+    slic->enforceLabelConnectivity();
+    endTime = cv::getTickCount();
+    printf( "           final: %lu superpixels (merge in %.6f sec)\n",
+            m_labels, ( endTime - startTime ) / frequency );
+  }
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
   // superpixels property
   size_t m_bands = raster.size();
-  size_t m_labels = slic->getNumberOfSuperpixels();
+  if( ! EQUAL( algo, "SEEDS" ) )
+    m_labels = slic->getNumberOfSuperpixels();
+  else
+    m_labels = seed->getNumberOfSuperpixels();
 
   // storage
   cv::Mat klabels;
-  slic->getLabels( klabels );
+  if( ! EQUAL( algo, "SEEDS" ) )
+    slic->getLabels( klabels );
+  else
+    seed->getLabels( klabels );
 
   // release mem
   slic.release();
+  seed.release();
 
   /*
    * get segments contour
