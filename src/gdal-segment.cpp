@@ -146,7 +146,7 @@ int main(int argc, char ** argv)
 
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
-            "    [-b R B (N-th band from raster R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]\n"
+            "    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]\n"
             "    [-niter <1..500>] [-region <pixels>]\n\n"
             "Default niter: 10 iterations\n"
             "Default region: 10 pixels\n\n" );

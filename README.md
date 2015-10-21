@@ -12,7 +12,7 @@ friendly optimizations, thus very large scenes are supported well.
 
 ```
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
-    [-b R B (N-th band from raster R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]
+    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]
     [-niter <1..500>] [-region <pixels>]
 
 Default niter: 10 iterations
