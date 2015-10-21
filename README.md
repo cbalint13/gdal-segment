@@ -8,9 +8,7 @@ various layouts like multispectral or hyperspectral. It uses OpenCV for it's cor
 and GDAL for undelying I/O. Implementation here follows several multithread and memory
 friendly optimizations, thus very large scenes are supported well.
 
-```
- * At this moment it implements SLIC [1][2] (with SLICO) and SEEDS [3].
-```
+ * At this moment it implements SLIC, SLICO and SEEDS.
 
 ```
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
