@@ -8,9 +8,9 @@ various layouts like multispectral or hyperspectral. It uses OpenCV for it's cor
 and GDAL for undelying I/O. Implementation here follows several multithread and memory
 friendly optimizations, thus very large scenes are supported well.
 
+```
  * At this moment it implements SLIC [1][2] (with SLICO) and SEEDS [3].
-
- * Copyright: 2013,2015 Balint Cristian <cristian dot balint at gmail dot com>
+```
 
 ```
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
@@ -38,3 +38,4 @@ Default ruler: 10.00
  * [3] "SEEDS: Superpixels Extracted via Energy-Driven Sampling",
  Van den Bergh M., Boix X., Roig G., de Capitani B. and Van Gool L.,
  In European Conference on Computer Vision (Vol. 7, pp. 13-26)., 2012
+
