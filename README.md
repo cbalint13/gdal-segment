@@ -1,6 +1,6 @@
 # gdal-segment
 
-![Logo](https://github.com/cbalint13/gdal-segment/blob/master/samples/logo/small_logo.png)
+![Logo](https://github.com/cbalint13/gdal-segment/blob/master/samples/logo/small_logo.gif)
 
  * **GDAL Segment** implements various segmentation algorithms over raster images. It can
 be used to segment large aerial, satellite imagery of various formats supported by GDAL and
