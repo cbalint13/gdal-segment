@@ -25,6 +25,8 @@
   cd opencv_contrib
   wget https://github.com/Itseez/opencv_contrib/pull/261.patch
   patch -p1 < 261.patch
+  wget https://github.com/Itseez/opencv_contrib/pull/419.patch
+  patch -p1 < 419.patch
   cd ..
   mkdir build
   cd build
@@ -58,5 +60,15 @@ Please cite following papers:
  * [2] "SLIC Superpixels" Radhakrishna Achanta, Appu Shaji, Kevin Smith,
  Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
  Report no. 149300, June 2010.
+
+ * [3] "SEEDS: Superpixels extracted via energy-driven sampling"
+ Van den Bergh, Michael and Boix, Xavier and Roig, Gemma and de Capitani,
+ Benjamin and Van Gool, Luc, ECCV 2012
+
+ * [4] "Superpixel Segmentation using Linear Spectral Clustering"
+ Zhengqin Li, Jiansheng Chen, IEEE Conference on Computer Vision and Pattern
+ Recognition (CVPR), Jun. 2015
+
+"
 
 --->>>---

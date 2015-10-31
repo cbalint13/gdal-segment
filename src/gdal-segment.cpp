@@ -63,12 +63,13 @@ int main(int argc, char ** argv)
   const char *OutFilename = NULL;
 
   // general defaults
-  int niter = 10;
-  int regionsize = 10;
-  float regularizer = 10.0f;
+  int niter = 0;
+  bool blur = false;
+  int regionsize = 0;
 
   // some counters
   int64 startTime, endTime;
+  int64 startSecond, endSecond;
   double frequency = cv::getTickFrequency();
 
   // register
@@ -94,7 +95,7 @@ int main(int argc, char ** argv)
     {
       if( EQUAL( argv[i],"-help" ) ) {
         askhelp = true;
-        i++; break;
+        break;
       }
       if( EQUAL( argv[i],"-algo" ) ) {
         algo = argv[i+1];
@@ -112,6 +113,10 @@ int main(int argc, char ** argv)
         OutFilename = argv[i+1];
         i++; continue;
       }
+      if( EQUAL( argv[i],"-blur" ) ) {
+        blur = true;
+        continue;
+      }
       printf("Invalid %s option.\n\n", argv[i]);
       help = true;
     }
@@ -125,9 +130,23 @@ int main(int argc, char ** argv)
   if ( !askhelp )
   {
     // check parameters
-    if ((! EQUAL( algo, "SLICO"))
-    &&  (! EQUAL( algo, "SLIC"))
-    &&  (! EQUAL( algo, "SEEDS")))
+    if ( EQUAL( algo, "SLIC"  )
+      || EQUAL( algo, "SLICO" ) )
+    {
+        if (!niter) niter = 10;
+        if (!regionsize) regionsize = 10;
+    }
+    else if ( EQUAL( algo, "SEEDS" ) )
+    {
+        if (!niter) niter = 20;
+        if (!regionsize) regionsize = 10;
+    }
+    else if ( EQUAL( algo, "LSC" ) )
+    {
+        if (!niter) niter = 20;
+        if (!regionsize) regionsize = 10;
+    }
+    else
     {
       printf( "\nERROR: Invalid algorithm: %s\n", algo);
       help = true;
@@ -146,17 +165,17 @@ int main(int argc, char ** argv)
 
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
-            "    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]\n"
-            "    [-niter <1..500>] [-region <pixels>]\n\n"
-            "Default niter: 10 iterations\n"
-            "Default region: 10 pixels\n\n" );
+            "    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS, LSC>]\n"
+            "    [-niter <1..500>] [-region <pixels>]\n"
+            "    [-blur (apply 3x3 gaussian blur)]\n\n"
+            "Default niter: 10 iterations\n\n");
 
     GDALDestroyDriverManager();
     exit( 1 );
   }
 
   printf( "Segments raster using: %s\n", algo );
-  printf( "Process use parameter: ruler=%.02f region=%i niter=%i\n", regularizer, regionsize, niter );
+  printf( "Process use parameter: region=%i niter=%i\n", regionsize, niter );
 
   /*
    * load raster image
@@ -168,6 +187,20 @@ int main(int argc, char ** argv)
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
+  if ( blur )
+  {
+    printf( "Apply Gaussian Blur (3x3 kernel)\n");
+    startTime = cv::getTickCount();
+    for( size_t b = 0; b < raster.size(); b++ )
+    {
+      GaussianBlur( raster[b], raster[b], Size( 3, 3 ), 0.0f, 0.0f, BORDER_DEFAULT );
+      GDALTermProgress( (float)b / (float)raster.size(), NULL, NULL );
+    }
+    GDALTermProgress( 1.0f, NULL, NULL );
+    endTime = cv::getTickCount();
+    printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
+  }
+
   /*
    * init segments
    */
@@ -175,16 +208,28 @@ int main(int argc, char ** argv)
   printf( "Init Superpixels\n");
   Ptr<SuperpixelSLIC> slic;
   Ptr<SuperpixelSEEDS> seed;
+  Ptr<SuperpixelLSC> lsc;
+
   startTime = cv::getTickCount();
-  if( EQUAL( algo, "SLIC" ) )
-    slic = createSuperpixelSLIC( raster, SLIC, regionsize, regularizer );
-  else if( EQUAL( algo, "SLICO" ) )
-    slic = createSuperpixelSLIC( raster, SLICO, regionsize, regularizer );
-  else if( EQUAL( algo, "SEEDS" ) )
+  if ( EQUAL ( algo, "SLIC" ) )
+    slic = createSuperpixelSLIC( raster, SLIC, regionsize, 10.0f );
+  else if ( EQUAL( algo, "SLICO" ) )
+    slic = createSuperpixelSLIC( raster, SLICO, regionsize, 10.0f );
+  else if ( EQUAL( algo, "LSC" ) )
+    lsc = createSuperpixelLSC( raster, regionsize, 0.075f );
+  else if ( EQUAL( algo, "SEEDS" ) )
   {
+    // only few datatype is supported
+    if ( ( raster[0].depth() != CV_8U )
+       &&( raster.size() != 3 ) )
+    {
+      printf( "\nERROR: Input datatype is not supported by SEED. Use RGB or Gray with Byte types.\n" );
+      exit( 0 );
+    }
+
     int clusters = int(((float)raster[0].cols / (float)regionsize)
                      * ((float)raster[0].rows / (float)regionsize));
-    seed = createSuperpixelSEEDS( raster[0].cols, raster[0].rows, raster.size(), clusters, 1, 2, 5, true);
+    seed = createSuperpixelSEEDS( raster[0].cols, raster[0].rows, raster.size(), clusters, 1, 2, 5, true );
   }
   else
   {
@@ -195,11 +240,15 @@ int main(int argc, char ** argv)
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
   size_t m_labels = 0;
-  if( ! EQUAL( algo, "SEEDS" ) )
+  if ( EQUAL( algo, "SLIC" )
+    || EQUAL( algo, "SLICO" ) )
     m_labels = slic->getNumberOfSuperpixels();
-  else
+  else if ( EQUAL( algo, "SEEDS" ) )
     m_labels = seed->getNumberOfSuperpixels();
+  else if ( EQUAL( algo, "LSC" ) )
+    m_labels = lsc->getNumberOfSuperpixels();
 
+  startTime = cv::getTickCount();
   printf( "Grow Superpixels: #%i iterations\n", niter );
   printf( "           inits: %lu superpixels\n", m_labels );
 
@@ -207,54 +256,78 @@ int main(int argc, char ** argv)
    * start compute segments
    */
 
-  startTime = cv::getTickCount();
-  if( ! EQUAL( algo, "SEEDS" ) )
+  startSecond = cv::getTickCount();
+  if ( EQUAL( algo, "SLIC" )
+    || EQUAL( algo, "SLICO" ) )
     slic->iterate( niter );
-  else
+  else if ( EQUAL( algo, "LSC" ) )
+    lsc->iterate( niter );
+  else if ( EQUAL( algo, "SEEDS" ) )
   {
     cv::Mat whole;
     cv::merge(raster,whole);
     seed->iterate( whole, niter );
   }
-  endTime = cv::getTickCount();
+  endSecond = cv::getTickCount();
 
 
-  if( ! EQUAL( algo, "SEEDS" ) )
+  if( EQUAL( algo, "SLIC" )
+   || EQUAL( algo, "SLICO" ) )
     m_labels = slic->getNumberOfSuperpixels();
-  else
+  else if ( EQUAL( algo, "SEEDS" ) )
     m_labels = seed->getNumberOfSuperpixels();
+  else if ( EQUAL( algo, "LSC" ) )
+    m_labels = lsc->getNumberOfSuperpixels();
+
+  printf( "           count: %lu superpixels (growed in %.6f sec)\n",
+          m_labels, ( endSecond - startSecond ) / frequency );
 
   // get smooth labels
-  printf( "           count: %lu superpixels (grows in %.6f sec)\n",
-          m_labels, ( endTime - startTime ) / frequency );
-  if( ! EQUAL( algo, "SEEDS" ) )
+  startSecond = cv::getTickCount();
+  if ( EQUAL( algo, "SLIC" )
+    || EQUAL( algo, "SLICO" ) )
   {
-    startTime = cv::getTickCount();
     slic->enforceLabelConnectivity();
-    endTime = cv::getTickCount();
-    printf( "           final: %lu superpixels (merge in %.6f sec)\n",
-            m_labels, ( endTime - startTime ) / frequency );
   }
-  endTime = cv::getTickCount();
-  printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
+  else if ( EQUAL( algo, "LSC" ) )
+  {
+    lsc->enforceLabelConnectivity();
+  }
+  endSecond = cv::getTickCount();
+
+  if ( EQUAL( algo, "SLIC" )
+    || EQUAL( algo, "SLICO" ) )
+    m_labels = slic->getNumberOfSuperpixels();
+  else if ( EQUAL( algo, "SEEDS" ) )
+    m_labels = seed->getNumberOfSuperpixels();
+  else if ( EQUAL( algo, "LSC" ) )
+    m_labels = lsc->getNumberOfSuperpixels();
+
+  if ( ! EQUAL( algo, "SEEDS" ) )
+  {
+    printf( "           final: %lu superpixels (merged in %.6f sec)\n",
+            m_labels, ( endSecond - startSecond ) / frequency );
+    endTime = cv::getTickCount();
+    printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
+  }
 
   // superpixels property
   size_t m_bands = raster.size();
-  if( ! EQUAL( algo, "SEEDS" ) )
-    m_labels = slic->getNumberOfSuperpixels();
-  else
-    m_labels = seed->getNumberOfSuperpixels();
 
   // storage
   cv::Mat klabels;
-  if( ! EQUAL( algo, "SEEDS" ) )
+  if( EQUAL( algo, "SLIC" )
+   || EQUAL( algo, "SLICO" ) )
     slic->getLabels( klabels );
-  else
+  else if( EQUAL( algo, "SEEDS" ) )
     seed->getLabels( klabels );
+  else if( EQUAL( algo, "LSC" ) )
+    lsc->getLabels( klabels );
 
   // release mem
   slic.release();
   seed.release();
+  lsc.release();
 
   /*
    * get segments contour

@@ -1,11 +1,14 @@
 #!/bin/bash
 
 rm -rf output-slic.???
-../bin/gdal-segment -algo SLIC -region 8 -niter 10 kermit000.jpg -out output-slic.shp
+../bin/gdal-segment -algo SLIC -region 10 -niter 10 25cm_orto0.jpg -out output-slic.shp
 
 rm -rf output-slico.???
-../bin/gdal-segment -algo SLICO -region 8 -niter 10 kermit000.jpg -out output-slico.shp
+../bin/gdal-segment -algo SLICO -region 10 -niter 10 25cm_orto0.jpg -out output-slico.shp
 
 rm -rf output-seeds.???
-../bin/gdal-segment -algo SEEDS -region 8 -niter 25 kermit000.jpg -out output-seeds.shp
+../bin/gdal-segment -algo SEEDS -region 10 -niter 25 25cm_orto0.jpg -out output-seeds.shp
+
+rm -rf output-lsc.???
+../bin/gdal-segment -algo LSC -region 10 -niter 20 25cm_orto0.jpg -out output-lsc.shp
 

@@ -12,12 +12,11 @@ friendly optimizations, thus very large scenes are supported well.
 
 ```
 Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector
-    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS>]
+    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS, LSC>]
     [-niter <1..500>] [-region <pixels>]
+    [-blur (apply 3x3 gaussian blur)]
 
 Default niter: 10 iterations
-Default region: 10 pixels
-Default ruler: 10.00
 ```
 
  * Please follow INSTALL.md for detailed requirements and install steps.
@@ -33,7 +32,11 @@ Default ruler: 10.00
  Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
  Report no. 149300, June 2010.
 
- * [3] "SEEDS: Superpixels Extracted via Energy-Driven Sampling",
- Van den Bergh M., Boix X., Roig G., de Capitani B. and Van Gool L.,
- In European Conference on Computer Vision (Vol. 7, pp. 13-26)., 2012
+ * [3] "SEEDS: Superpixels extracted via energy-driven sampling"
+ Van den Bergh, Michael and Boix, Xavier and Roig, Gemma and de Capitani,
+ Benjamin and Van Gool, Luc, ECCV 2012
+
+ * [4] "Superpixel Segmentation using Linear Spectral Clustering"
+ Zhengqin Li, Jiansheng Chen, IEEE Conference on Computer Vision and Pattern
+ Recognition (CVPR), Jun. 2015
 
