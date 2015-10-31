@@ -257,7 +257,7 @@ void ComputeStats( const cv::Mat klabels,
                    std::vector< std::vector <double> >& stdCH )
 {
 
-  const size_t m_bands = raster.size();
+  const int m_bands = (int) raster.size();
 
   printf ("Compute Statistics\n");
 
@@ -314,7 +314,7 @@ void ComputeStats( const cv::Mat klabels,
   for (size_t k = 0; k < labelpixels.size(); k++)
   {
       #pragma omp parallel for schedule(dynamic)
-      for (size_t b = 0; b < m_bands; b++)
+      for (int b = 0; b < m_bands; b++)
       {
           avgCH[b][k] = sumCH[b][k] / (double) labelpixels[k];
       }
@@ -380,7 +380,7 @@ void ComputeStats( const cv::Mat klabels,
   for (size_t k = 0; k < labelpixels.size(); k++)
   {
       #pragma omp parallel for schedule(dynamic)
-      for (size_t b = 0; b < m_bands; b++)
+      for (int b = 0; b < m_bands; b++)
       {
           stdCH[b][k] = sqrt(stdCH[b][k] / labelpixels[k]);
       }

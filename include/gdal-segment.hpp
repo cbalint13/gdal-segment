@@ -23,6 +23,8 @@
 
 
 
+typedef __int32 u_int32_t;
+
 typedef struct LINE {
   unsigned int sX;
   unsigned int sY;

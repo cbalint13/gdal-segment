@@ -42,8 +42,15 @@ IF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
                      "MinSizeRel" "RelWithDebInfo")
 ENDIF()
 
-SET(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -O3")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -O3")
+# Default build is in Release mode
+IF(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+  SET(CMAKE_BUILD_TYPE "Release")
+ENDIF(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+
+IF (NOT WIN32)
+ SET(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -O3")
+ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -O3")
+ENDIF()
 
 #####
 # find OpenMP library
@@ -61,6 +68,7 @@ FIND_PACKAGE(OpenCV REQUIRED core ximgproc)
 IF(OpenCV_FOUND)
   INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
   MESSAGE(STATUS "OpenCV version: " ${OpenCV_VERSION})
+  MESSAGE(STATUS "OpenCV include: " ${OpenCV_INCLUDE_DIRS})
   STRING(COMPARE LESS "${OpenCV_VERSION}" 3.0.0 VersionIncompatible)
   IF(VersionIncompatible)
     MESSAGE(FATAL_ERROR "OpenCV minimum 3.0.0 required.")
@@ -69,7 +77,12 @@ IF(OpenCV_FOUND)
   IF(NOT OPENCV_HAS_SLIC)
     MESSAGE(FATAL_ERROR "OpenCV has no SLIC superpixel support. Too old ?")
   ENDIF()
+  FIND_FILE(OPENCV_HAS_LSC lsc.hpp HINTS ${OpenCV_INCLUDE_DIRS}/opencv2/ximgproc/)
+  IF(NOT OPENCV_HAS_LSC)
+    MESSAGE(FATAL_ERROR "OpenCV has no LSC superpixel support. Too old ?")
+  ENDIF()
 ENDIF()
+
 
 #####
 # find GDAL library
