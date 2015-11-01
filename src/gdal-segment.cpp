@@ -58,7 +58,7 @@ using namespace cv::ximgproc;
 
 int main(int argc, char ** argv)
 {
-  const char *algo = "SLICO";
+  const char *algo = "";
   vector< string > InFilenames;
   const char *OutFilename = NULL;
 
@@ -117,7 +117,7 @@ int main(int argc, char ** argv)
         blur = true;
         continue;
       }
-      printf("Invalid %s option.\n\n", argv[i]);
+      printf( "Invalid %s option.\n\n", argv[i] );
       help = true;
     }
     else if( argv[i][0] != '-' )
@@ -148,27 +148,30 @@ int main(int argc, char ** argv)
     }
     else
     {
-      printf( "\nERROR: Invalid algorithm: %s\n", algo);
+      if ( EQUAL(algo, "" ) )
+        printf( "\nERROR: No algorithm specified.\n" );
+      else
+        printf( "\nERROR: Invalid algorithm: %s\n", algo );
       help = true;
     }
     if ( InFilenames.size() == 0 )
     {
-      printf( "\nERROR: No input file specified.\n");
+      printf( "\nERROR: No input file specified.\n" );
       help = true;
     }
     if (! OutFilename )
     {
-      printf( "\nERROR: No output file specified.\n");
+      printf( "\nERROR: No output file specified.\n" );
       help = true;
     }
   }
 
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
-            "    [-b R B (N-th band from R-th raster)] [-algo <SLICO (default), SLIC, SEEDS, LSC>]\n"
+            "    [-b R B (N-th band from R-th raster)] [-algo <LSC, SLICO, SLIC, SEEDS>]\n"
             "    [-niter <1..500>] [-region <pixels>]\n"
             "    [-blur (apply 3x3 gaussian blur)]\n\n"
-            "Default niter: 10 iterations\n\n");
+            "Default niter: 10 iterations\n\n" );
 
     GDALDestroyDriverManager();
     exit( 1 );
@@ -189,7 +192,7 @@ int main(int argc, char ** argv)
 
   if ( blur )
   {
-    printf( "Apply Gaussian Blur (3x3 kernel)\n");
+    printf( "Apply Gaussian Blur (3x3 kernel)\n" );
     startTime = cv::getTickCount();
     for( size_t b = 0; b < raster.size(); b++ )
     {
@@ -205,7 +208,7 @@ int main(int argc, char ** argv)
    * init segments
    */
 
-  printf( "Init Superpixels\n");
+  printf( "Init Superpixels\n" );
   Ptr<SuperpixelSLIC> slic;
   Ptr<SuperpixelSEEDS> seed;
   Ptr<SuperpixelLSC> lsc;
@@ -378,7 +381,7 @@ int main(int argc, char ** argv)
   * END
   */
 
-  printf("Finish.\n");
+  printf( "Finish.\n" );
 
   return 0;
 
