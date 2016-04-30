@@ -173,7 +173,7 @@ int main(int argc, char ** argv)
 
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
-            "    [-of <output_format> default (ESRI Shapefile)]>\n"
+            "    [-of <output_format> 'ESRI Shapefile' is default]\n"
             "    [-b R B (N-th band from R-th raster)] [-algo <LSC, SLICO, SLIC, SEEDS>]\n"
             "    [-niter <1..500>] [-region <pixels>]\n"
             "    [-blur (apply 3x3 gaussian blur)]\n\n"
