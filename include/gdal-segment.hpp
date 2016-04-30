@@ -22,8 +22,9 @@
 #include <opencv2/opencv.hpp>
 
 
-
+#ifdef _WIN
 typedef __int32 u_int32_t;
+#endif
 
 typedef struct LINE {
   unsigned int sX;

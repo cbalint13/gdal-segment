@@ -273,7 +273,7 @@ void ComputeStats( const cv::Mat klabels,
           // gather how many pixels per class we have
           labelpixels[klabels.at<u_int32_t>(i)]++;
           // summ all pixel intensities
-          for (size_t b = 0; b < m_bands; b++)
+          for (int b = 0; b < m_bands; b++)
           {
             const int k = klabels.at<u_int32_t>(i);
             switch ( raster[b].depth() )
@@ -332,7 +332,7 @@ void ComputeStats( const cv::Mat klabels,
       {
           int i = yklabels + x;
 
-          for (size_t b = 0; b < m_bands; b++)
+          for (int b = 0; b < m_bands; b++)
           {
             const int k = klabels.at<u_int32_t>(i);
             switch ( raster[b].depth() )

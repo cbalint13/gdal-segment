@@ -136,9 +136,16 @@ void SavePolygons( const std::vector< std::string > InFilenames,
   CPLErrorReset();
 
   const char *pszDriverName = "ESRI Shapefile";
-  GDALDriver *liDriver;
 
-  liDriver = GetGDALDriverManager()->GetDriverByName(pszDriverName );
+#if GDALVER >= 2
+  GDALDriver *liDriver;
+  liDriver = GetGDALDriverManager()->GetDriverByName( pszDriverName );
+#else
+  OGRSFDriver *liDriver;
+  liDriver = OGRSFDriverRegistrar::GetRegistrar()
+           ->GetDriverByName( pszDriverName );
+#endif
+
   if( liDriver == NULL )
   {
       printf( "\nERROR: %s driver not available.\n", pszDriverName );
@@ -148,8 +155,13 @@ void SavePolygons( const std::vector< std::string > InFilenames,
   const size_t m_bands = raster.size();
   const size_t m_labels = labelpixels.size();
 
+#if GDALVER >= 2
   GDALDataset *liDS;
   liDS = liDriver->Create( OutFilename, 0, 0, 0, GDT_Unknown, NULL );
+#else
+  OGRDataSource *liDS;
+  liDS = liDriver->CreateDataSource( OutFilename, NULL );
+#endif
 
   if( liDS == NULL )
   {
@@ -167,6 +179,7 @@ void SavePolygons( const std::vector< std::string > InFilenames,
 
   OGRLayer *liLayer;
   liLayer = liDS->CreateLayer( "segments", &oSRS, wkbPolygon, NULL );
+
   if( liLayer == NULL )
   {
       printf( "\nERROR: Layer creation failed.\n" );
@@ -209,18 +222,21 @@ void SavePolygons( const std::vector< std::string > InFilenames,
   for (size_t k = 0; k < m_labels; k++)
   {
 
-      if (multiring == 1) {
+      if ( multiring == 1 )
+      {
         k = k - 1;
         multiring = 0;
       }
 
-      if (linelists[k].size() == 0)
+      if ( linelists[k].size() == 0 )
         continue;
+
       // insert field data
       OGRFeature *liFeature;
       liFeature = OGRFeature::CreateFeature( liLayer->GetLayerDefn() );
       liFeature->SetField( "CLASS", (int) k );
       liFeature->SetField( "AREA", (int) labelpixels.at(k) );
+
       for ( size_t b = 0; b < m_bands; b++ )
       {
         stringstream value; value << b+1;
@@ -244,7 +260,7 @@ void SavePolygons( const std::vector< std::string > InFilenames,
       // construct polygon from lines
       while ( linelists[k].size() > 0 )
       {
-        if (multiring == 1) break;
+        if ( multiring == 1 ) break;
 
         vector<LINE>::iterator it = linelists[k].begin();
         for (; it != linelists[k].end(); ++it)
@@ -331,6 +347,11 @@ void SavePolygons( const std::vector< std::string > InFilenames,
   }
   GDALTermProgress( 1.0f, NULL, NULL );
 
+#if GDALVER >= 2
   GDALClose( liDS );
+#else
+  OGRDataSource::DestroyDataSource( liDS );
+#endif
+
 
 }
