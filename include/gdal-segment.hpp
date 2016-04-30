@@ -50,7 +50,7 @@ void LabelContours( const cv::Mat klabels, std::vector< std::vector< LINE > >& l
 
 // vactor dump
 void SavePolygons( const std::vector< std::string > InFilenames,
-                   const char *OutFilename,
+                   const char *OutFilename, const char *OutFormat,
                    const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
                    const std::vector< u_int32_t > labelpixels,

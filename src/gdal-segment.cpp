@@ -61,6 +61,7 @@ int main(int argc, char ** argv)
   const char *algo = "";
   vector< string > InFilenames;
   const char *OutFilename = NULL;
+  const char *OutFormat = "ESRI Shapefile";
 
   // general defaults
   int niter = 0;
@@ -111,6 +112,10 @@ int main(int argc, char ** argv)
       }
       if( EQUAL( argv[i],"-out" ) ) {
         OutFilename = argv[i+1];
+        i++; continue;
+      }
+      if( EQUAL( argv[i],"-of" ) ) {
+        OutFormat = argv[i+1];
         i++; continue;
       }
       if( EQUAL( argv[i],"-blur" ) ) {
@@ -168,12 +173,43 @@ int main(int argc, char ** argv)
 
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
+            "    [-of <output_format> default (ESRI Shapefile)]>\n"
             "    [-b R B (N-th band from R-th raster)] [-algo <LSC, SLICO, SLIC, SEEDS>]\n"
             "    [-niter <1..500>] [-region <pixels>]\n"
             "    [-blur (apply 3x3 gaussian blur)]\n\n"
             "Default niter: 10 iterations\n\n" );
 
     GDALDestroyDriverManager();
+    exit( 1 );
+  }
+
+#if GDALVER >= 2
+  GDALDriverManager *poR = GetGDALDriverManager();
+  GDALDriver *poDriver = poR->GetDriverByName( OutFormat );
+#else
+  OGRSFDriverRegistrar *poR = OGRSFDriverRegistrar::GetRegistrar();
+  OGRSFDriver *poDriver = poR->GetDriverByName( OutFormat );
+#endif
+
+  // check drivers
+  if( poDriver == NULL )
+  {
+    printf( "Unable to find driver `%s'.\n", OutFormat );
+    printf( "The following drivers are available:\n" );
+    for( int i = 0; i < poR->GetDriverCount(); i++ )
+    {
+#if GDALVER >= 2
+      const char *prop = poR->GetDriver(i)->GetMetadataItem( GDAL_DCAP_RASTER );
+      if ( prop == NULL )
+      {
+        const char *name = poR->GetDriver(i)->GetDescription();
+        const char *desc = poR->GetDriver(i)->GetMetadataItem( GDAL_DMD_LONGNAME );
+        printf( "  -> '%s' (%s)\n", name, desc );
+      }
+#else
+      printf( "  -> '%s'\n", poR->GetDriver(i)->GetName());
+#endif
+    }
     exit( 1 );
   }
 
@@ -371,8 +407,8 @@ int main(int argc, char ** argv)
   */
 
   startTime = cv::getTickCount();
-  SavePolygons( InFilenames, OutFilename, klabels, raster,
-                labelpixels, sumCH, avgCH, stdCH, linelists );
+  SavePolygons( InFilenames, OutFilename, OutFormat, klabels,
+                raster, labelpixels, sumCH, avgCH, stdCH, linelists );
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 

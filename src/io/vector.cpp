@@ -122,7 +122,7 @@ void LabelContours( const cv::Mat klabels, std::vector< std::vector< LINE > >& l
 
 
 void SavePolygons( const std::vector< std::string > InFilenames,
-                   const char *OutFilename,
+                   const char *OutFilename, const char *OutFormat,
                    const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
                    const std::vector< u_int32_t > labelpixels,
@@ -135,20 +135,18 @@ void SavePolygons( const std::vector< std::string > InFilenames,
   CPLLocaleC oLocaleCForcer();
   CPLErrorReset();
 
-  const char *pszDriverName = "ESRI Shapefile";
-
 #if GDALVER >= 2
   GDALDriver *liDriver;
-  liDriver = GetGDALDriverManager()->GetDriverByName( pszDriverName );
+  liDriver = GetGDALDriverManager()->GetDriverByName( OutFormat );
 #else
   OGRSFDriver *liDriver;
   liDriver = OGRSFDriverRegistrar::GetRegistrar()
-           ->GetDriverByName( pszDriverName );
+           ->GetDriverByName( OutFormat );
 #endif
 
   if( liDriver == NULL )
   {
-      printf( "\nERROR: %s driver not available.\n", pszDriverName );
+      printf( "\nERROR: %s driver not available.\n", OutFormat );
       exit( 1 );
   }
 
@@ -339,7 +337,7 @@ void SavePolygons( const std::vector< std::string > InFilenames,
 
       if( liLayer->CreateFeature( liFeature ) != OGRERR_NONE )
       {
-         printf( "\nERROR: Failed to create feature in shapefile.\n" );
+         printf( "\nERROR: Failed to create feature in vector layer.\n" );
          exit( 1 );
       }
       OGRFeature::DestroyFeature( liFeature );
