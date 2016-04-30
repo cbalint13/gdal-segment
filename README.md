@@ -19,7 +19,11 @@ Usage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vect
 Default niter: 10 iterations
 ```
 
- * Please follow INSTALL.md for detailed requirements and install steps.
+**Requirements:**
+
+ - **gdal** 1.x or 2.x
+ - **opencv** & **opencv_contrib** >= 3.1
+ - Please follow INSTALL.md for detailed requirements and install steps.
 
 **Related citations:**
 
