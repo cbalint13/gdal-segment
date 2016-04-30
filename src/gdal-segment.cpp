@@ -27,6 +27,11 @@
  Van den Bergh M., Boix X., Roig G., de Capitani B. and Van Gool L.,
  In European Conference on Computer Vision (Vol. 7, pp. 13-26)., 2012
 
+ "Superpixel Segmentation using Linear Spectral Clustering"
+ Zhengqin Li, Jiansheng Chen,
+ IEEE Conference on Computer Vision and Pattern Recognition (CVPR),
+ Jun. 2015
+
  */
 
 /* slic-segment.cpp */
