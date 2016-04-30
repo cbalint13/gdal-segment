@@ -22,8 +22,8 @@ Default niter: 10 iterations
 
 **Requirements:**
 
- - **gdal** 1.x or 2.x
- - **opencv** & **opencv_contrib** >= 3.1
+ - **[gdal](http://www.gdal.org)** 1.x or 2.x
+ - **[opencv](https://github.com/Itseez/opencv)** & **[opencv_contrib](https://github.com/Itseez/opencv_contrib)** >= 3.1
  - Please follow INSTALL.md for detailed requirements and install steps.
 
 **Related citations:**
