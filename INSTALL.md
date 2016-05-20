@@ -39,7 +39,6 @@
   cd build
   cmake ../
   make
-  make install
 ```
 
 ---<<<---
@@ -63,6 +62,5 @@ Please cite following papers:
  Zhengqin Li, Jiansheng Chen, IEEE Conference on Computer Vision and Pattern
  Recognition (CVPR), Jun. 2015
 
-"
 
 --->>>---
