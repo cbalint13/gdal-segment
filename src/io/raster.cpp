@@ -167,6 +167,8 @@ void LoadRaster( const std::vector< std::string > InFilenames,
       printf ("           block: (%i Pixels x %i Lines) pixels / tile\n", nXBlockSize, nYBlockSize);
       printf ("           ");
 
+      CPLErr error;
+
       for( iYBlock = 0; iYBlock < nYBlocks; iYBlock++ )
       {
           for( iXBlock = 0; iXBlock < nXBlocks; iXBlock++ )
@@ -185,7 +187,10 @@ void LoadRaster( const std::vector< std::string > InFilenames,
                else
                  nYValid = nYBlockSize;
 
-               piDataset->GetRasterBand(iB+1)->ReadBlock( iXBlock, iYBlock, pabyData.data );
+               error = piDataset->GetRasterBand(iB+1)->ReadBlock( iXBlock, iYBlock, pabyData.data );
+
+               if ( error != CE_None )
+                 printf("ERROR: GetRasterBand()\n");
 
                // cache some computations
                const int iXAllBlocks = iXBlock * nXBlockSize;
