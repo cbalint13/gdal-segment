@@ -222,8 +222,8 @@ void LoadRaster( const std::vector< std::string > InFilenames,
                              break;
 
                            case GDT_Int32:
-                             Channel.at<int>( iYShifts, iX + iXAllBlocks )
-                                       = pabyData.at<int>( iYOffset + iX );
+                             Channel.at<u_int32_t>( iYShifts, iX + iXAllBlocks )
+                                       = pabyData.at<u_int32_t>( iYOffset + iX );
                              break;
 
                            case GDT_Float32:
@@ -256,13 +256,15 @@ void LoadRaster( const std::vector< std::string > InFilenames,
 
 void ComputeStats( const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
-                   std::vector< u_int32_t >& labelpixels,
-                   std::vector< std::vector <double> >& sumCH,
-                   std::vector< std::vector <double> >& avgCH,
-                   std::vector< std::vector <double> >& stdCH )
+                   cv::Mat& labelpixels, cv::Mat& avgCH, cv::Mat& stdCH )
 {
 
+  avgCH = Scalar::all(0);
+  stdCH = Scalar::all(0);
+  labelpixels = Scalar::all(0);
+
   const int m_bands = (int) raster.size();
+  Mat sumCH = Mat::zeros(m_bands, klabels.cols*klabels.rows, CV_64F);
 
   printf ("Compute Statistics\n");
 
@@ -271,38 +273,38 @@ void ComputeStats( const cv::Mat klabels,
   for (int y = 0; y < klabels.rows; y++)
   {
       const int yklabels = y * klabels.cols;
-      #pragma omp parallel for schedule(dynamic)
       for (int x = 0; x < klabels.cols; x++)
       {
-          int i = yklabels + x;
+          const int i = yklabels + x;
+          const int k = klabels.at<u_int32_t>(i);
           // gather how many pixels per class we have
-          labelpixels[klabels.at<u_int32_t>(i)]++;
+          labelpixels.at<u_int32_t>( klabels.at<u_int32_t>(i) )++;
           // summ all pixel intensities
+          #pragma omp parallel for schedule(dynamic)
           for (int b = 0; b < m_bands; b++)
           {
-            const int k = klabels.at<u_int32_t>(i);
             switch ( raster[b].depth() )
             {
               case CV_8U:
-                sumCH[b][k] += (double) raster[b].at<uchar>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<uchar>(i);
                 break;
               case CV_8S:
-                sumCH[b][k] += (double) raster[b].at<char>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<char>(i);
                 break;
               case CV_16U:
-                sumCH[b][k] += (double) raster[b].at<ushort>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<ushort>(i);
                 break;
               case CV_16S:
-                sumCH[b][k] += (double) raster[b].at<short>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<short>(i);
                 break;
               case CV_32S:
-                sumCH[b][k] += (double) raster[b].at<int>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<u_int32_t>(i);
                 break;
               case CV_32F:
-                sumCH[b][k] += (double) raster[b].at<float>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<float>(i);
                 break;
               case CV_64F:
-                sumCH[b][k] += (double) raster[b].at<double>(i);
+                sumCH.at<double>(b,k) += (double) raster[b].at<double>(i);
                 break;
               default:
                 CV_Error( Error::StsInternal, "\nERROR: Invalid raster depth" );
@@ -316,14 +318,14 @@ void ComputeStats( const cv::Mat klabels,
 
   printf ("       Computing CLASS averaged intensity\n");
   printf ("       ");
-  for (size_t k = 0; k < labelpixels.size(); k++)
+  for (int k = 0; k < labelpixels.rows; k++)
   {
       #pragma omp parallel for schedule(dynamic)
       for (int b = 0; b < m_bands; b++)
       {
-          avgCH[b][k] = sumCH[b][k] / (double) labelpixels[k];
+          avgCH.at<double>(b,k) = sumCH.at<double>(b,k) / (double) labelpixels.at<u_int32_t>(k);
       }
-      GDALTermProgress( (float)(k+1) / (float)(labelpixels.size()), NULL, NULL );
+      GDALTermProgress( (float)(k+1) / (float)(labelpixels.rows), NULL, NULL );
   }
   GDALTermProgress( 1.0f, NULL, NULL );
 
@@ -332,43 +334,42 @@ void ComputeStats( const cv::Mat klabels,
   for (int y = 0; y < klabels.rows; y++)
   {
       const int yklabels = y * klabels.cols;
-      #pragma omp parallel for schedule(dynamic)
       for (int x = 0; x < klabels.cols; x++)
       {
-          int i = yklabels + x;
-
+          const int i = yklabels + x;
+          const int k = klabels.at<u_int32_t>(i);
+          #pragma omp parallel for schedule(dynamic)
           for (int b = 0; b < m_bands; b++)
           {
-            const int k = klabels.at<u_int32_t>(i);
             switch ( raster[b].depth() )
             {
               case CV_8U:
-                stdCH[b][k] += pow( (double) raster[b].at<uchar>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<uchar>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               case CV_8S:
-                stdCH[b][k] += pow( (double) raster[b].at<char>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<char>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               case CV_16U:
-                stdCH[b][k] += pow( (double) raster[b].at<ushort>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<ushort>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               case CV_16S:
-                stdCH[b][k] += pow( (double) raster[b].at<short>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<short>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               case CV_32S:
-                stdCH[b][k] += pow( (double) raster[b].at<int>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<u_int32_t>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               case CV_32F:
-                stdCH[b][k] += pow( (double) raster[b].at<float>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<float>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               case CV_64F:
-                stdCH[b][k] += pow( (double) raster[b].at<double>(i)
-                             - avgCH[b][klabels.at<u_int32_t>(i)], 2 );
+                stdCH.at<double>(b,k) += pow( (double) raster[b].at<double>(i)
+                             - avgCH.at<double>(b,klabels.at<u_int32_t>(i)), 2 );
                 break;
               default:
                 CV_Error( Error::StsInternal, "\nERROR: Invalid raster depth" );
@@ -382,14 +383,15 @@ void ComputeStats( const cv::Mat klabels,
 
   printf ("       Normalize CLASS standard deviation\n");
   printf ("       ");
-  for (size_t k = 0; k < labelpixels.size(); k++)
+
+  for (int k = 0; k < labelpixels.rows; k++)
   {
       #pragma omp parallel for schedule(dynamic)
       for (int b = 0; b < m_bands; b++)
       {
-          stdCH[b][k] = sqrt(stdCH[b][k] / labelpixels[k]);
+          stdCH.at<double>(b,k) = sqrt(stdCH.at<double>(b,k) / labelpixels.at<u_int32_t>(k));
       }
-      GDALTermProgress( (float)(k+1) / (float)(labelpixels.size()), NULL, NULL );
+      GDALTermProgress( (float)(k+1) / (float)(labelpixels.rows), NULL, NULL );
   }
   GDALTermProgress( 1.0f, NULL, NULL );
 

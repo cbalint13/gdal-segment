@@ -40,10 +40,7 @@ void LoadRaster( const std::vector< std::string > InFilenames,
 // raster statistics
 void ComputeStats( const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
-                   std::vector< u_int32_t >& labelpixels,
-                   std::vector< std::vector <double> >& sumCH,
-                   std::vector< std::vector <double> >& avgCH,
-                   std::vector< std::vector <double> >& stdCH );
+                   cv::Mat& labelpixels, cv::Mat& avgCH, cv::Mat& stdCH );
 
 // vector contours
 void LabelContours( const cv::Mat klabels, std::vector< std::vector< LINE > >& linelists);
@@ -53,10 +50,8 @@ void SavePolygons( const std::vector< std::string > InFilenames,
                    const char *OutFilename, const char *OutFormat,
                    const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
-                   const std::vector< u_int32_t > labelpixels,
-                   const std::vector< std::vector <double> > sumCH,
-                   const std::vector< std::vector <double> > avgCH,
-                   const std::vector< std::vector <double> > stdCH,
+                   const cv::Mat labelpixels,
+                   const cv::Mat avgCH, const cv::Mat stdCH,
                    std::vector< std::vector< LINE > >& linelists );
 
 #endif

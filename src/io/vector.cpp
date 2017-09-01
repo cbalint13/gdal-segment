@@ -125,10 +125,8 @@ void SavePolygons( const std::vector< std::string > InFilenames,
                    const char *OutFilename, const char *OutFormat,
                    const cv::Mat klabels,
                    const std::vector< cv::Mat > raster,
-                   const std::vector< u_int32_t > labelpixels,
-                   const std::vector< std::vector <double> > sumCH,
-                   const std::vector< std::vector <double> > avgCH,
-                   const std::vector< std::vector <double> > stdCH,
+                   const Mat labelpixels,
+                   const Mat avgCH, const Mat stdCH,
                    std::vector< std::vector< LINE > >& linelists )
 {
 
@@ -144,6 +142,9 @@ void SavePolygons( const std::vector< std::string > InFilenames,
            ->GetDriverByName( OutFormat );
 #endif
 
+  // speed up SQLite
+  CPLSetThreadLocalConfigOption("OGR_SQLITE_SYNCHRONOUS", "OFF");
+
   if( liDriver == NULL )
   {
       printf( "\nERROR: %s driver not available.\n", OutFormat );
@@ -151,7 +152,7 @@ void SavePolygons( const std::vector< std::string > InFilenames,
   }
 
   const size_t m_bands = raster.size();
-  const size_t m_labels = labelpixels.size();
+  const size_t m_labels = labelpixels.rows;
 
 #if GDALVER >= 2
   GDALDataset *liDS;
@@ -233,21 +234,20 @@ void SavePolygons( const std::vector< std::string > InFilenames,
       OGRFeature *liFeature;
       liFeature = OGRFeature::CreateFeature( liLayer->GetLayerDefn() );
       liFeature->SetField( "CLASS", (int) k );
-      liFeature->SetField( "AREA", (int) labelpixels.at(k) );
+      liFeature->SetField( "AREA", (int) labelpixels.at<int>(k) );
 
       for ( size_t b = 0; b < m_bands; b++ )
       {
         stringstream value; value << b+1;
         std::string FieldName = value.str() + "_AVERAGE";
-        liFeature->SetField( FieldName.c_str(), (double) avgCH[b].at(k) );
+        liFeature->SetField( FieldName.c_str(), (double) avgCH.at<double>(b,k) );
       }
       for ( size_t b = 0; b < m_bands; b++ )
       {
         stringstream value; value << b+1;
         std::string FieldName = value.str() + "_STDDEV";
-        liFeature->SetField( FieldName.c_str(), stdCH[b].at(k) );
+        liFeature->SetField( FieldName.c_str(), (double) stdCH.at<double>(b,k) );
       }
-
       // initiate polygon start
       OGRLinearRing linestring;
       linestring.setCoordinateDimension(2);

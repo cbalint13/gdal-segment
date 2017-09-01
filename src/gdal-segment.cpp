@@ -54,6 +54,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/ximgproc.hpp>
+#include <opencv2/hdf/hdf5.hpp>
 
 using namespace std;
 using namespace cv;
@@ -66,11 +67,14 @@ int main(int argc, char ** argv)
   const char *algo = "";
   vector< string > InFilenames;
   const char *OutFilename = NULL;
+  const char *OutStatH5name = NULL;
   const char *OutFormat = "ESRI Shapefile";
 
   // general defaults
   int niter = 0;
   bool blur = false;
+  bool labcol = false;
+  bool enforce = true;
   int regionsize = 0;
 
   // some counters
@@ -119,6 +123,10 @@ int main(int argc, char ** argv)
         OutFilename = argv[i+1];
         i++; continue;
       }
+      if( EQUAL( argv[i],"-h5stat" ) ) {
+        OutStatH5name = argv[i+1];
+        i++; continue;
+      }
       if( EQUAL( argv[i],"-of" ) ) {
         OutFormat = argv[i+1];
         i++; continue;
@@ -126,6 +134,19 @@ int main(int argc, char ** argv)
       if( EQUAL( argv[i],"-blur" ) ) {
         blur = true;
         continue;
+      }
+      if( EQUAL( argv[i],"-lab" ) ) {
+        labcol = true;
+        continue;
+      }
+      if( EQUAL( argv[i],"-merge" ) ) {
+        if( EQUAL( argv[i+1],"true" ) )
+          enforce = true;
+        else if( EQUAL( argv[i+1],"false" ) )
+          enforce = false;
+        else
+          help = true;
+        i++; continue;
       }
       printf( "Invalid %s option.\n\n", argv[i] );
       help = true;
@@ -141,7 +162,8 @@ int main(int argc, char ** argv)
   {
     // check parameters
     if ( EQUAL( algo, "SLIC"  )
-      || EQUAL( algo, "SLICO" ) )
+      || EQUAL( algo, "SLICO" )
+      || EQUAL( algo, "MSLIC" ) )
     {
         if (!niter) niter = 10;
         if (!regionsize) regionsize = 10;
@@ -179,9 +201,11 @@ int main(int argc, char ** argv)
   if ( help || askhelp ) {
     printf( "\nUsage: gdal-segment [-help] src_raster1 src_raster2 .. src_rasterN -out dst_vector\n"
             "    [-of <output_format> 'ESRI Shapefile' is default]\n"
-            "    [-b R B (N-th band from R-th raster)] [-algo <LSC, SLICO, SLIC, SEEDS>]\n"
+            "    [-h5stat <output hdf5 statfile>]\n"
+            "    [-b R B (B-th band from R-th raster)] [-algo <LSC, SLICO, SLIC, SEEDS, MSLIC>]\n"
+            "    [-blur (apply 3x3 gaussian blur)] [-lab (convert rgb ro lab colorspace)]\n"
+            "    [-merge <true|false (default true)>]\n"
             "    [-niter <1..500>] [-region <pixels>]\n"
-            "    [-blur (apply 3x3 gaussian blur)]\n\n"
             "Default niter: 10 iterations\n\n" );
 
     GDALDestroyDriverManager();
@@ -231,6 +255,17 @@ int main(int argc, char ** argv)
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
+  std::vector<Mat> original;
+
+  if ( labcol )
+  {
+    Mat temp;
+    // safe copy original
+    merge(raster, temp);
+    split(temp, original);
+    temp.release();
+  }
+
   if ( blur )
   {
     printf( "Apply Gaussian Blur (3x3 kernel)\n" );
@@ -243,6 +278,18 @@ int main(int argc, char ** argv)
     GDALTermProgress( 1.0f, NULL, NULL );
     endTime = cv::getTickCount();
     printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
+  }
+
+
+  Mat rgb;
+  if ( labcol )
+  {
+    Mat lab;
+    raster.resize(3);
+    printf( "Convert to LAB colorspace.\n" );
+    merge( raster, rgb );
+    cvtColor( rgb, lab, CV_RGB2Lab );
+    split(lab, raster);
   }
 
   /*
@@ -259,6 +306,8 @@ int main(int argc, char ** argv)
     slic = createSuperpixelSLIC( raster, SLIC, regionsize, 10.0f );
   else if ( EQUAL( algo, "SLICO" ) )
     slic = createSuperpixelSLIC( raster, SLICO, regionsize, 10.0f );
+  else if ( EQUAL( algo, "MSLIC" ) )
+    slic = createSuperpixelSLIC( raster, MSLIC, regionsize, 10.0f );
   else if ( EQUAL( algo, "LSC" ) )
     lsc = createSuperpixelLSC( raster, regionsize, 0.075f );
   else if ( EQUAL( algo, "SEEDS" ) )
@@ -285,7 +334,8 @@ int main(int argc, char ** argv)
 
   size_t m_labels = 0;
   if ( EQUAL( algo, "SLIC" )
-    || EQUAL( algo, "SLICO" ) )
+    || EQUAL( algo, "SLICO" )
+    || EQUAL( algo, "MSLIC" ) )
     m_labels = slic->getNumberOfSuperpixels();
   else if ( EQUAL( algo, "SEEDS" ) )
     m_labels = seed->getNumberOfSuperpixels();
@@ -302,7 +352,8 @@ int main(int argc, char ** argv)
 
   startSecond = cv::getTickCount();
   if ( EQUAL( algo, "SLIC" )
-    || EQUAL( algo, "SLICO" ) )
+    || EQUAL( algo, "SLICO" )
+    || EQUAL( algo, "MSLIC" ) )
     slic->iterate( niter );
   else if ( EQUAL( algo, "LSC" ) )
     lsc->iterate( niter );
@@ -316,7 +367,8 @@ int main(int argc, char ** argv)
 
 
   if( EQUAL( algo, "SLIC" )
-   || EQUAL( algo, "SLICO" ) )
+   || EQUAL( algo, "SLICO" )
+   || EQUAL( algo, "MSLIC" ) )
     m_labels = slic->getNumberOfSuperpixels();
   else if ( EQUAL( algo, "SEEDS" ) )
     m_labels = seed->getNumberOfSuperpixels();
@@ -329,17 +381,21 @@ int main(int argc, char ** argv)
   // get smooth labels
   startSecond = cv::getTickCount();
   if ( EQUAL( algo, "SLIC" )
-    || EQUAL( algo, "SLICO" ) )
+    || EQUAL( algo, "SLICO" )
+    || EQUAL( algo, "MSLIC" ) )
   {
-    slic->enforceLabelConnectivity();
+    if ( enforce == true )
+      slic->enforceLabelConnectivity();
   }
   else if ( EQUAL( algo, "LSC" ) )
   {
-    lsc->enforceLabelConnectivity();
+    if ( enforce == true)
+      lsc->enforceLabelConnectivity();
   }
   endSecond = cv::getTickCount();
 
   if ( EQUAL( algo, "SLIC" )
+    || EQUAL( algo, "MSLIC" )
     || EQUAL( algo, "SLICO" ) )
     m_labels = slic->getNumberOfSuperpixels();
   else if ( EQUAL( algo, "SEEDS" ) )
@@ -355,12 +411,11 @@ int main(int argc, char ** argv)
     printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
   }
 
-  // superpixels property
-  size_t m_bands = raster.size();
 
   // storage
   cv::Mat klabels;
   if( EQUAL( algo, "SLIC" )
+   || EQUAL( algo, "MSLIC" )
    || EQUAL( algo, "SLICO" ) )
     slic->getLabels( klabels );
   else if( EQUAL( algo, "SEEDS" ) )
@@ -390,19 +445,20 @@ int main(int argc, char ** argv)
    */
 
   startTime = cv::getTickCount();
-  std::vector< u_int32_t > labelpixels( m_labels, 0 );
-  std::vector< std::vector <double> > sumCH( m_bands ); // sum
-  std::vector< std::vector <double> > avgCH( m_bands ); // avg
-  std::vector< std::vector <double> > stdCH( m_bands ); // std
 
-  for ( size_t b = 0; b < m_bands; b++)
+  if ( labcol )
   {
-    sumCH[b].resize( m_labels, 0 );
-    avgCH[b].resize( m_labels, 0 );
-    stdCH[b].resize( m_labels, 0 );
+    raster = original;
   }
 
-  ComputeStats( klabels, raster, labelpixels, sumCH, avgCH, stdCH );
+  // superpixels property
+  size_t m_bands = raster.size();
+
+  Mat labelpixels(m_labels, 1, CV_32S);
+  Mat avgCH(m_bands, m_labels, CV_64F);
+  Mat stdCH(m_bands, m_labels, CV_64F);
+
+  ComputeStats( klabels, raster, labelpixels, avgCH, stdCH );
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
@@ -413,10 +469,23 @@ int main(int argc, char ** argv)
 
   startTime = cv::getTickCount();
   SavePolygons( InFilenames, OutFilename, OutFormat, klabels,
-                raster, labelpixels, sumCH, avgCH, stdCH, linelists );
+                raster, labelpixels, avgCH, stdCH, linelists );
   endTime = cv::getTickCount();
   printf( "Time: %.6f sec\n\n", ( endTime - startTime ) / frequency );
 
+
+ /*
+  * dump stats
+  */
+
+  if ( OutStatH5name )
+  {
+    cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open( OutStatH5name );
+    h5io->dswrite( avgCH, "average" );
+    h5io->dswrite( stdCH, "stddevs" );
+    h5io->dswrite( labelpixels, "pixarea" );
+    h5io->close();
+  }
 
  /*
   * END
